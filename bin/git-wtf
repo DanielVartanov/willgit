@@ -192,6 +192,8 @@ end
 `git config --get-regexp ^branch\.`.each do |l|
   case l
   when /branch\.(.*?)\.remote (.+)/
+    next if $2 == '.'
+
     branches[$1] ||= {}
     branches[$1][:remote] = $2
     branches[$1][:remote_url] = remotes[$2]
