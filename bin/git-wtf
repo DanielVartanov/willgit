@@ -1,33 +1,51 @@
 #!/usr/bin/env ruby
 
 ## git-wtf: display the state of your repository in a readable and easy-to-scan
-## format.
+## format. git-wtf tries to ease the task of dealing with many git branches.
+## It's also useful for getting a summary of how tracking branches relate to a
+## remote server.
 ##
-## git-wtf tries to ease the task of having many git branches. It's also useful
-## for getting a summary of how tracking branches relate to a remote server.
+## git-wtf is mainly useful in the case where you have one local repo and one
+## remote repo, and you're interested in the relationship between the two.
+## It's less useful for tracking multiple remote repos, though it's getting
+## better at it.
 ##
 ## git-wtf shows you:
 ## - How your branch relates to the remote repo, if it's a tracking branch.
-## - How your branch relates to non-feature ("version") branches, if it's a
-##   feature branch.
+## - How your branch relates to non-feature (what I've been calling "version")
+##   branches, if it's a feature branch.
 ## - How your branch relates to the feature branches, if it's a version branch.
 ##
 ## For each of these relationships, git-wtf displays the commits pending on
 ## either side, if any. It displays checkboxes along the side for easy scanning
 ## of merged/non-merged branches.
 ##
-## If you're working against a remote repo, git-wtf is best used between a 'git
-## fetch' and a 'git merge' (or 'git pull' if you don't mind the redundant
-## network access).
+## OUTPUT KEY
 ##
-## Usage: git wtf [branch+] [-l|--long] [-a|--all] [--dump-config] [-A|--all-commits] [-s|--short]
+## [] means the branch has a corresponding remote version
+## () means it doesn't, i.e. it only exists in the local repo
+##
+## x means the merge occurs both locally and remotely
+## ~ means the merge occurs only locally
+##   (space) means the branch isn't merged in
+##
+## It's possible for merges to occur remotely and not locally, of course,
+## but that's a less common case and git-wtf currently doesn't display anything
+## special for it.
+##
+## USAGE
+##
+## git wtf [branch+] [-l|--long] [-a|--all] [-A|--all-commits] [-s|--short]
+##
+## git-wtf is best used after a 'git fetch' and before a 'git push' or a 'git
+## merge'.
 ##
 ## If [branch] is not specified, git-wtf will use the current branch.  With
 ## --long, you'll see author info and date for each commit. With --all-commits,
 ## you'll see all commits, not just the first 5; with --short, you'll see none.
 ## With --dump-config, git-wtf will print out its current configuration in YAML
-## format and exit. With --all, you'll see all feature branches, not just local
-## ones.
+## format and exit. With --all, you'll see all feature branches across all
+## remote repos, not just local feature branches.
 ##
 ## git-wtf uses some heuristics to determine which branches are version
 ## branches, and which are feature branches. (Specifically, it assumes the
@@ -56,7 +74,6 @@
 ## more details.
 ##
 ## You can find the GNU General Public License at: http://www.gnu.org/licenses/
-
 
 require 'yaml'
 CONFIG_FN = ".git-wtfrc"
@@ -239,4 +256,3 @@ puts "NOTE: working directory contains modified files" if modified
 puts "NOTE: staging area contains staged but uncommitted files" if uncommitted
 
 # the end!
-
