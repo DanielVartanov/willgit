@@ -203,11 +203,11 @@ end
   when /branch\.(.*?)\.remote (.+)/
     next if $2 == '.'
 
-    branches[$1] ||= {}
+    next unless branches[$1]
     branches[$1][:remote] = $2
     branches[$1][:remote_url] = remotes[$2]
   when /branch\.(.*?)\.merge ((refs\/)?heads\/)?(.+)/
-    branches[$1] ||= {}
+    next unless branches[$1]
     branches[$1][:remote_mergepoint] = $4
   end
 end
