@@ -20,13 +20,14 @@
 ## fetch' and a 'git merge' (or 'git pull' if you don't mind the redundant
 ## network access).
 ##
-## Usage: git wtf [branch+] [-l|--long] [-a|--all] [--dump-config] [-s|--short]
+## Usage: git wtf [branch+] [-l|--long] [-a|--all] [--dump-config] [-A|--all-commits] [-s|--short]
 ##
 ## If [branch] is not specified, git-wtf will use the current branch.  With
-## --long, you'll see author info and date for each commit. With --short, you
-## won't see any commits.  With --dump-config, git-wtf will print out its
-## current configuration in YAML format and exit. With --all, you'll see all
-## feature branches, not just local ones.
+## --long, you'll see author info and date for each commit. With --all-commits,
+## you'll see all commits, not just the first 5; with --short, you'll see none.
+## With --dump-config, git-wtf will print out its current configuration in YAML
+## format and exit. With --all, you'll see all feature branches, not just local
+## ones.
 ##
 ## git-wtf uses some heuristics to determine which branches are version
 ## branches, and which are feature branches. (Specifically, it assumes the
@@ -36,8 +37,8 @@
 ## git-wtf looks for a .git-wtfrc file starting in the current directory, and
 ## recursively up to the root. The config file is a YAML file that specifies
 ## the version branches, any branches to ignore, and the max number of commits
-## to display when --all isn't used. To start building a configuration file,
-## run "git-wtf --dump-config > .git-wtfrc" and edit it.
+## to display when --all-commits isn't used. To start building a configuration
+## file, run "git-wtf --dump-config > .git-wtfrc" and edit it.
 ##
 ## IMPORTANT NOTE: all local branches referenced in .git-wtfrc must be prefixed
 ## with heads/, e.g. "heads/master". Remote branches must be of the form
@@ -65,6 +66,7 @@ class Numeric; def pluralize s; "#{to_s} #{s}" + (self != 1 ? "s" : "") end end
 $long = ARGV.delete("--long") || ARGV.delete("-l")
 $short = ARGV.delete("--short") || ARGV.delete("-s")
 $all = ARGV.delete("--all") || ARGV.delete("-a")
+$all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
 
 ## find config file
@@ -100,7 +102,7 @@ def show_commits commits, prefix="    "
   if commits.empty?
     puts "#{prefix} none"
   else
-    max = $all ? commits.size : $config["max_commits"]
+    max = $all_commits ? commits.size : $config["max_commits"]
     max -= 1 if max == commits.size - 1 # never show "and 1 more"
     commits[0 ... max].each { |c| puts "#{prefix}#{c}" }
     puts "#{prefix}... and #{commits.size - max} more." if commits.size > max
@@ -179,8 +181,13 @@ end
 branches = `git show-ref`.inject({}) do |hash, l|
   sha1, ref = l.chomp.split " refs/"
   next hash if $config["ignore"].member? ref
-  next hash unless ref =~ /^heads\/(.+)/
-  name = $1
+  name = if $all
+    ref =~ /^(?:heads|remotes)\/(.+)/ && $1
+  else
+    ref =~ /^heads\/(.+)/ && $1
+  end
+
+  next hash if name.nil? || name == "origin/HEAD"
   hash[name] = { :name => name, :local_branch => ref }
   hash
 end
