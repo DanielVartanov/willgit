@@ -20,12 +20,13 @@
 ## fetch' and a 'git merge' (or 'git pull' if you don't mind the redundant
 ## network access).
 ##
-## Usage: git wtf [branch+] [-l|--long] [-a|--all] [--dump-config]
+## Usage: git wtf [branch+] [-l|--long] [-a|--all] [--dump-config] [-s|--short]
 ##
 ## If [branch] is not specified, git-wtf will use the current branch.  With
-## --long, you'll see author info and date for each commit. With --all, you'll
-## see all commits, not just the first 5. With --dump-config, git-wtf will
-## print out its current configuration in YAML format and exit.
+## --long, you'll see author info and date for each commit. With --short, you
+## won't see any commits.  With --dump-config, git-wtf will print out its
+## current configuration in YAML format and exit. With --all, you'll see all
+## feature branches, not just local ones.
 ##
 ## git-wtf uses some heuristics to determine which branches are version
 ## branches, and which are feature branches. (Specifically, it assumes the
@@ -62,6 +63,7 @@ CONFIG_FN = ".git-wtfrc"
 class Numeric; def pluralize s; "#{to_s} #{s}" + (self != 1 ? "s" : "") end end
 
 $long = ARGV.delete("--long") || ARGV.delete("-l")
+$short = ARGV.delete("--short") || ARGV.delete("-s")
 $all = ARGV.delete("--all") || ARGV.delete("-a")
 $dump_config = ARGV.delete("--dump-config")
 
@@ -125,7 +127,7 @@ def show b, all_branches
     else
       action = both ? "push after rebase / merge" : "push"
       puts "[ ] NOT in sync with remote (needs #{action})"
-      show_commits pushc
+      show_commits pushc unless $short
     end
 
     puts "\nRemote branch: #{b[:remote_branch]} (#{b[:remote_url]})"
@@ -135,7 +137,7 @@ def show b, all_branches
     else
       action = pushc.empty? ? "merge" : "rebase / merge"
       puts "[ ] NOT in sync with local (needs #{action})"
-      show_commits pullc
+      show_commits pullc unless $short
 
       both = !pushc.empty? && !pullc.empty?
     end
@@ -154,7 +156,7 @@ def show b, all_branches
       else
         behind = commits_between br[:local_branch], b[:local_branch]
         puts "[ ] #{br[:name]} is NOT merged in (#{ahead_behind_string local_ahead, behind})"
-        show_commits local_ahead
+        show_commits local_ahead unless $short
       end
     end
   else
@@ -166,7 +168,7 @@ def show b, all_branches
       else
         #behind = commits_between b[:local_branch], v
         puts "[ ] NOT merged into #{v} (#{ahead.size.pluralize 'commit'} ahead)"
-        show_commits ahead
+        show_commits ahead unless $short
       end
     end
   end
