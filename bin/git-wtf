@@ -182,7 +182,7 @@ def show b, all_branches
     end
   end
 
-  vbs, fbs = all_branches.partition { |name, br| $config["versions"].include? br[:local_branch] }
+  vbs, fbs = all_branches.partition { |name, br| $config["versions"].include?(br[:local_branch]) || $config["versions"].include?(br[:remote_branch]) }
   if $config["versions"].include? b[:local_branch]
     puts "\nFeature branches:" unless fbs.empty?
     fbs.each do |name, br|
@@ -209,7 +209,8 @@ def show b, all_branches
     end
   else
     puts "\nVersion branches:" unless vbs.empty? # unlikely
-    vbs.each do |v, br|
+    vbs.sort_by { |v, br| v }.each do |v, br|
+      next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
       local_only = br[:remote_branch].nil?
       ahead = commits_between v, (b[:local_branch] || b[:remote_branch])
       if ahead.empty?
@@ -217,7 +218,7 @@ def show b, all_branches
       else
         #behind = commits_between b[:local_branch], v
         puts "#{widget false, local_only} NOT merged into #{v} (#{ahead.size.pluralize 'commit'} ahead)"
-        show_commits ahead unless $short
+        #show_commits ahead unless $short
       end
     end
   end
