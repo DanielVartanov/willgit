@@ -7,8 +7,6 @@
 ##
 ## git-wtf is mainly useful in the case where you have one local repo and one
 ## remote repo, and you're interested in the relationship between the two.
-## It's less useful for tracking multiple remote repos, though it's getting
-## better at it.
 ##
 ## git-wtf shows you:
 ## - How your branch relates to the remote repo, if it's a tracking branch.
@@ -22,15 +20,16 @@
 ##
 ## OUTPUT KEY
 ##
-## [] means the branch has a corresponding remote version
-## () means it doesn't, i.e. it only exists in the local repo
+## [] means the branch exists locally and remotely
+## () means the branch only exists locally
+## {} means it only exists on a remote repo
 ##
 ## x means the merge occurs both locally and remotely
 ## ~ means the merge occurs only locally
 ##   (space) means the branch isn't merged in
 ##
-## It's possible for merges to occur remotely and not locally, of course,
-## but that's a less common case and git-wtf currently doesn't display anything
+## It's possible for merges to occur remotely and not locally, of course, but
+## that's a less common case and git-wtf currently doesn't display anything
 ## special for it.
 ##
 ## USAGE
@@ -45,7 +44,7 @@
 ## you'll see all commits, not just the first 5; with --short, you'll see none.
 ## With --dump-config, git-wtf will print out its current configuration in YAML
 ## format and exit. With --all, you'll see all feature branches across all
-## remote repos, not just local feature branches.
+## remote repos, not just those from origin.
 ##
 ## git-wtf uses some heuristics to determine which branches are version
 ## branches, and which are feature branches. (Specifically, it assumes the
@@ -132,39 +131,54 @@ def ahead_behind_string ahead, behind
    compact.join("; ")
 end
 
-def widget merged_in, local_only=false, local_only_merge=false
-  print(local_only ? "(" : "[")
-  print(merged_in ? (local_only_merge ? "~" : "x") : " ")
-  print(local_only ? ")" : "]")
+def widget merged_in, remote_only=false, local_only=false, local_only_merge=false
+  left, right = case
+    when remote_only; %w({ })
+    when local_only; %w{( )}
+    else %w([ ])
+  end
+  middle = case
+    when merged_in && local_only_merge; "~"
+    when merged_in; "x"
+    else " "
+  end
+  print left, middle, right
 end
 
 def show b, all_branches
-  puts "Local branch: #{b[:local_branch]}"
-  both = false
+  have_both = b[:local_branch] && b[:remote_branch]
+
+  pushc, pullc, oosync = if have_both
+    [x = commits_between(b[:remote_branch], b[:local_branch]),
+     y = commits_between(b[:local_branch], b[:remote_branch]),
+     !x.empty? && !y.empty?]
+  end
+
+  if b[:local_branch]
+    puts "Local branch: #{b[:local_branch]}"
+
+    if have_both
+      if pushc.empty?
+        puts "#{widget true} in sync with remote"
+      else
+        action = oosync ? "push after rebase / merge" : "push"
+        puts "#{widget false} NOT in sync with remote (needs #{action})"
+        show_commits pushc unless $short
+      end
+    end
+  end
 
   if b[:remote_branch]
-    pushc = commits_between b[:remote_branch], b[:local_branch]
-    pullc = commits_between b[:local_branch], b[:remote_branch]
+    puts "Remote branch: #{b[:remote_branch]} (#{b[:remote_url]})"
 
-    both = !pushc.empty? && !pullc.empty?
-    if pushc.empty?
-      puts "#{widget true} in sync with remote"
-    else
-      action = both ? "push after rebase / merge" : "push"
-      puts "#{widget false} NOT in sync with remote (needs #{action})"
-      show_commits pushc unless $short
-    end
-
-    puts "\nRemote branch: #{b[:remote_branch]} (#{b[:remote_url]})"
-
-    if pullc.empty?
-      puts "#{widget true} in sync with local"
-    else
-      action = pushc.empty? ? "merge" : "rebase / merge"
-      puts "#{widget false} NOT in sync with local (needs #{action})"
-      show_commits pullc unless $short
-
-      both = !pushc.empty? && !pullc.empty?
+    if have_both
+      if pullc.empty?
+        puts "#{widget true} in sync with local"
+      else
+        action = pushc.empty? ? "merge" : "rebase / merge"
+        puts "#{widget false} NOT in sync with local (needs #{action})"
+        show_commits pullc unless $short
+      end
     end
   end
 
@@ -172,24 +186,32 @@ def show b, all_branches
   if $config["versions"].include? b[:local_branch]
     puts "\nFeature branches:" unless fbs.empty?
     fbs.each do |name, br|
+      next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
       local_only = br[:remote_branch].nil?
-      remote_ahead = b[:remote_branch] ? commits_between(b[:remote_branch], br[:local_branch]) : []
-      local_ahead = commits_between b[:local_branch], br[:local_branch]
+      remote_only = br[:local_branch].nil?
+      ## for remote_only branches, we'll compute wrt the remote branch head. otherwise, we'll
+      ## use the local branch head.
+      head = remote_only ? br[:remote_branch] : br[:local_branch]
+
+      remote_ahead = b[:remote_branch] ? commits_between(b[:remote_branch], head) : []
+      local_ahead = b[:local_branch] ? commits_between(b[:local_branch], head) : []
+
       if local_ahead.empty? && remote_ahead.empty?
-        puts "#{widget true, local_only} #{br[:name]} is merged in"
-      elsif local_ahead.empty? && b[:remote_branch]
-        puts "#{widget true, local_only, true} #{br[:name]} merged in (only locally)"
+        puts "#{widget true, remote_only, local_only} #{br[:name]} is merged in"
+      elsif local_ahead.empty?
+        puts "#{widget true, remote_only, local_only, true} #{br[:name]} merged in (only locally)"
       else
-        behind = commits_between br[:local_branch], b[:local_branch]
-        puts "#{widget false, local_only} #{br[:name]} is NOT merged in (#{ahead_behind_string local_ahead, behind})"
-        show_commits local_ahead unless $short
+        behind = commits_between head, (br[:local_branch] || br[:remote_branch])
+        ahead = remote_only ? remote_ahead : local_ahead
+        puts "#{widget false, remote_only, local_only} #{br[:name]} is NOT merged in (#{ahead_behind_string ahead, behind})"
+        show_commits ahead unless $short
       end
     end
   else
     puts "\nVersion branches:" unless vbs.empty? # unlikely
     vbs.each do |v, br|
       local_only = br[:remote_branch].nil?
-      ahead = commits_between v, b[:local_branch]
+      ahead = commits_between v, (b[:local_branch] || b[:remote_branch])
       if ahead.empty?
         puts "#{widget true, local_only} merged into #{v}"
       else
@@ -200,50 +222,66 @@ def show b, all_branches
     end
   end
 
-  puts "\nWARNING: local and remote branches have diverged. A merge will occur unless you rebase." if both
+  puts "\nWARNING: local and remote branches have diverged. A merge will occur unless you rebase." if oosync
 end
 
-branches = `git show-ref`.inject({}) do |hash, l|
-  sha1, ref = l.chomp.split " refs/"
-  next hash if $config["ignore"].member? ref
-  name = if $all
-    ref =~ /^(?:heads|remotes)\/(.+)/ && $1
-  else
-    ref =~ /^heads\/(.+)/ && $1
-  end
-
-  next hash if name.nil? || name == "origin/HEAD"
-  hash[name] = { :name => name, :local_branch => ref }
-  hash
-end
-
+## first, index registered remotes
 remotes = `git config --get-regexp ^remote\.\*\.url`.inject({}) do |hash, l|
   l =~ /^remote\.(.+?)\.url (.+)$/ or next hash
   hash[$1] ||= $2
   hash
 end
 
-`git config --get-regexp ^branch\.`.each do |l|
+## next, index followed branches
+branches = `git config --get-regexp ^branch\.`.inject({}) do |hash, l|
   case l
   when /branch\.(.*?)\.remote (.+)/
-    next if $2 == '.'
+    name, remote = $1, $2
+    next if remote == '.'
 
-    next unless branches[$1]
-    branches[$1][:remote] = $2
-    branches[$1][:remote_url] = remotes[$2]
+    hash[name] ||= {}
+    hash[name].merge! :remote => remote, :remote_url => remotes[remote]
   when /branch\.(.*?)\.merge ((refs\/)?heads\/)?(.+)/
-    next unless branches[$1]
-    branches[$1][:remote_mergepoint] = $4
+    name, remote_branch = $1, $4
+    hash[name] ||= {}
+    hash[name].merge! :remote_mergepoint => remote_branch
+  end
+  hash
+end
+
+## finally, index all branches
+`git show-ref`.each do |l|
+  sha1, ref = l.chomp.split " refs/"
+
+  if ref =~ /^heads\/(.+)$/ # local branch
+    name = $1
+    next if name == "HEAD"
+    branches[name] ||= {}
+    branches[name].merge! :name => name, :local_branch => ref
+  elsif ref =~ /^remotes\/(.+?)\/(.+)$/ # remote branch
+    remote, name = $1, $2
+    next if name == "HEAD"
+    next unless $all || remote == "origin"
+
+    branch = name
+    if branches[name] && branches[name][:remote] == remote
+      # nothing
+    else
+      name = "#{remote}/#{branch}"
+    end
+
+    branches[name] ||= {}
+    branches[name].merge! :name => name, :remote => remote, :remote_branch => "#{remote}/#{branch}", :remote_url => remotes[remote]
   end
 end
 
-branches.each { |k, v| v[:remote_branch] = "#{v[:remote]}/#{v[:remote_mergepoint]}" if v[:remote] && v[:remote_mergepoint] }
+branches.each { |k, b| b[:remote_branch] = "#{b[:remote]}/#{b[:remote_mergepoint]}" if b[:remote] && b[:remote_mergepoint] }
 
 show_dirty = ARGV.empty?
 targets = if ARGV.empty?
   [`git symbolic-ref HEAD`.chomp.sub(/^refs\/heads\//, "")]
 else
-  ARGV
+  ARGV.map { |x| x.sub(/^heads\//, "") }
 end.map { |t| branches[t] or abort "Error: can't find branch #{t.inspect}." }
 
 targets.each { |t| show t, branches }
