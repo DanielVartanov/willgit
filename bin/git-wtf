@@ -220,7 +220,7 @@ def show b, all_branches
       else
         #behind = commits_between b[:local_branch], v
         puts "#{widget false, local_only} NOT merged into #{v} (#{ahead.size.pluralize 'commit'} ahead)"
-        #show_commits ahead unless $short
+        show_commits ahead unless $short
       end
     end
   end
