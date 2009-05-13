@@ -187,6 +187,7 @@ def show b, all_branches
     puts "\nFeature branches:" unless fbs.empty?
     fbs.each do |name, br|
       next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
+      next if br[:ignore]
       local_only = br[:remote_branch].nil?
       remote_only = br[:local_branch].nil?
       ## for remote_only branches, we'll compute wrt the remote branch head. otherwise, we'll
@@ -211,6 +212,7 @@ def show b, all_branches
     puts "\nVersion branches:" unless vbs.empty? # unlikely
     vbs.sort_by { |v, br| v }.each do |v, br|
       next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
+      next if br[:ignore]
       local_only = br[:remote_branch].nil?
       ahead = commits_between v, (b[:local_branch] || b[:remote_branch])
       if ahead.empty?
@@ -262,7 +264,7 @@ end
   elsif ref =~ /^remotes\/(.+?)\/(.+)$/ # remote branch
     remote, name = $1, $2
     next if name == "HEAD"
-    next unless $all || remote == "origin"
+    ignore = !($all || remote == "origin")
 
     branch = name
     if branches[name] && branches[name][:remote] == remote
@@ -272,7 +274,7 @@ end
     end
 
     branches[name] ||= {}
-    branches[name].merge! :name => name, :remote => remote, :remote_branch => "#{remote}/#{branch}", :remote_url => remotes[remote]
+    branches[name].merge! :name => name, :remote => remote, :remote_branch => "#{remote}/#{branch}", :remote_url => remotes[remote], :ignore => ignore
   end
 end
 
