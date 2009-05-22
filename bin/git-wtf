@@ -240,7 +240,6 @@ branches = `git config --get-regexp ^branch\.`.inject({}) do |hash, l|
   case l
   when /branch\.(.*?)\.remote (.+)/
     name, remote = $1, $2
-    next if remote == '.'
 
     hash[name] ||= {}
     hash[name].merge! :remote => remote, :remote_url => remotes[remote]
@@ -278,7 +277,7 @@ end
   end
 end
 
-branches.each { |k, b| b[:remote_branch] = "#{b[:remote]}/#{b[:remote_mergepoint]}" if b[:remote] && b[:remote_mergepoint] }
+branches.each { |k, b| b[:remote_branch] = (b[:remote] == '.' ? b[:remote_mergepoint] : "#{b[:remote]}/#{b[:remote_mergepoint]}") if b[:remote] && b[:remote_mergepoint] }
 
 show_dirty = ARGV.empty?
 targets = if ARGV.empty?
