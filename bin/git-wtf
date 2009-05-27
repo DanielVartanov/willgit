@@ -1,84 +1,91 @@
 #!/usr/bin/env ruby
 
-## git-wtf: display the state of your repository in a readable and easy-to-scan
-## format. git-wtf tries to ease the task of dealing with many git branches.
-## It's also useful for getting a summary of how tracking branches relate to a
-## remote server.
-##
-## git-wtf is mainly useful in the case where you have one local repo and one
-## remote repo, and you're interested in the relationship between the two.
-##
-## git-wtf shows you:
-## - How your branch relates to the remote repo, if it's a tracking branch.
-## - How your branch relates to non-feature (what I've been calling "version")
-##   branches, if it's a feature branch.
-## - How your branch relates to the feature branches, if it's a version branch.
-##
-## For each of these relationships, git-wtf displays the commits pending on
-## either side, if any. It displays checkboxes along the side for easy scanning
-## of merged/non-merged branches.
-##
-## OUTPUT KEY
-##
-## [] means the branch exists locally and remotely
-## () means the branch only exists locally
-## {} means it only exists on a remote repo
-##
-## x means the merge occurs both locally and remotely
-## ~ means the merge occurs only locally
-##   (space) means the branch isn't merged in
-##
-## It's possible for merges to occur remotely and not locally, of course, but
-## that's a less common case and git-wtf currently doesn't display anything
-## special for it.
-##
-## USAGE
-##
-## git wtf [branch+] [-l|--long] [-a|--all] [-A|--all-commits] [-s|--short]
-##
-## git-wtf is best used after a 'git fetch' and before a 'git push' or a 'git
-## merge'.
-##
-## If [branch] is not specified, git-wtf will use the current branch.  With
-## --long, you'll see author info and date for each commit. With --all-commits,
-## you'll see all commits, not just the first 5; with --short, you'll see none.
-## With --dump-config, git-wtf will print out its current configuration in YAML
-## format and exit. With --all, you'll see all feature branches across all
-## remote repos, not just those from origin.
-##
-## git-wtf uses some heuristics to determine which branches are version
-## branches, and which are feature branches. (Specifically, it assumes the
-## version branches are named "master", "next" and "edge".) If it guesses
-## incorrectly, you will have to create a .git-wtfrc file.
-##
-## git-wtf looks for a .git-wtfrc file starting in the current directory, and
-## recursively up to the root. The config file is a YAML file that specifies
-## the version branches, any branches to ignore, and the max number of commits
-## to display when --all-commits isn't used. To start building a configuration
-## file, run "git-wtf --dump-config > .git-wtfrc" and edit it.
-##
-## IMPORTANT NOTE: all local branches referenced in .git-wtfrc must be prefixed
-## with heads/, e.g. "heads/master". Remote branches must be of the form
-## remotes/<remote>/<branch>.
-##
-## git-wtf Copyright 2008 William Morgan <wmorgan-git-wt-add@masanjin.net>.
-## This program is free software: you can redistribute it and/or modify it
-## under the terms of the GNU General Public License as published by the Free
-## Software Foundation, either version 3 of the License, or (at your option)
-## any later version.
-##
-## This program is distributed in the hope that it will be useful, but WITHOUT
-## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-## FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-## more details.
-##
-## You can find the GNU General Public License at: http://www.gnu.org/licenses/
+HELP = <<EOS
+git-wtf: display the state of your repository in a readable and easy-to-scan
+format. git-wtf tries to ease the task of dealing with many git branches.
+It's also useful for getting a summary of how tracking branches relate to a
+remote server.
+
+git-wtf is mainly useful in the case where you have one local repo and one
+remote repo, and you're interested in the relationship between the two.
+
+git-wtf shows you:
+- How your branch relates to the remote repo, if it's a tracking branch.
+- How your branch relates to non-feature (what I've been calling "version")
+  branches, if it's a feature branch.
+- How your branch relates to the feature branches, if it's a version branch.
+
+For each of these relationships, git-wtf displays the commits pending on
+either side, if any. It displays checkboxes along the side for easy scanning
+of merged/non-merged branches.
+
+OUTPUT KEY
+
+[] means the branch exists locally and remotely
+() means the branch only exists locally
+{} means it only exists on a remote repo
+
+x means the merge occurs both locally and remotely
+~ means the merge occurs only locally
+  (space) means the branch isn't merged in
+
+It's possible for merges to occur remotely and not locally, of course, but
+that's a less common case and git-wtf currently doesn't display anything
+special for it.
+
+USAGE
+
+git wtf [branch+] [-l|--long] [-a|--all] [-A|--all-commits] [-s|--short]
+
+git-wtf is best used after a 'git fetch' and before a 'git push' or a 'git
+merge'.
+
+If [branch] is not specified, git-wtf will use the current branch.  With
+--long, you'll see author info and date for each commit. With --all-commits,
+you'll see all commits, not just the first 5; with --short, you'll see none.
+With --dump-config, git-wtf will print out its current configuration in YAML
+format and exit. With --all, you'll see all feature branches across all
+remote repos, not just those from origin.
+
+git-wtf uses some heuristics to determine which branches are version
+branches, and which are feature branches. (Specifically, it assumes the
+version branches are named "master", "next" and "edge".) If it guesses
+incorrectly, you will have to create a .git-wtfrc file.
+
+git-wtf looks for a .git-wtfrc file starting in the current directory, and
+recursively up to the root. The config file is a YAML file that specifies
+the version branches, any branches to ignore, and the max number of commits
+to display when --all-commits isn't used. To start building a configuration
+file, run "git-wtf --dump-config > .git-wtfrc" and edit it.
+
+IMPORTANT NOTE: all local branches referenced in .git-wtfrc must be prefixed
+with heads/, e.g. "heads/master". Remote branches must be of the form
+remotes/<remote>/<branch>.
+
+git-wtf Copyright 2008 William Morgan <wmorgan-git-wt-add@masanjin.net>.
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
+
+You can find the GNU General Public License at: http://www.gnu.org/licenses/
+EOS
 
 require 'yaml'
 CONFIG_FN = ".git-wtfrc"
 
 class Numeric; def pluralize s; "#{to_s} #{s}" + (self != 1 ? "s" : "") end end
 
+if ARGV.delete("--help") || ARGV.delete("-h")
+  puts HELP
+  exit
+end
+  
 $long = ARGV.delete("--long") || ARGV.delete("-l")
 $short = ARGV.delete("--short") || ARGV.delete("-s")
 $all = ARGV.delete("--all") || ARGV.delete("-a")
