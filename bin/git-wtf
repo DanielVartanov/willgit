@@ -93,7 +93,7 @@ $all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
 
 ## find config file
-$config = { "versions" => %w(heads/master heads/next heads/edge), "ignore" => [], "max_commits" => 5 }.merge begin
+$config = { "integration-branches" => %w(heads/master heads/next heads/edge), "ignore" => [], "max_commits" => 5 }.merge begin
   p = File.expand_path "."
   fn = while true
     fn = File.join p, CONFIG_FN
@@ -103,12 +103,20 @@ $config = { "versions" => %w(heads/master heads/next heads/edge), "ignore" => []
     p = pp
   end
 
-  (fn && YAML::load_file(fn)) || {} # YAML turns empty files into false
+  h = if fn
+    h = YAML::load_file fn
+    if h # yaml turns empty files into false
+      h["integration-branches"] = h["versions"] # support old nomenclature
+      h
+    end
+  end
+
+  h || {}
 end
 
 if $dump_config
   puts $config.to_yaml
-  exit(0)
+  exit
 end
 
 ## the set of commits in 'to' that aren't in 'from'.
@@ -189,8 +197,8 @@ def show b, all_branches
     end
   end
 
-  vbs, fbs = all_branches.partition { |name, br| $config["versions"].include?(br[:local_branch]) || $config["versions"].include?(br[:remote_branch]) }
-  if $config["versions"].include? b[:local_branch]
+  vbs, fbs = all_branches.partition { |name, br| $config["integration-branches"].include?(br[:local_branch]) || $config["integration-branches"].include?(br[:remote_branch]) }
+  if $config["integration-branches"].include? b[:local_branch]
     puts "\nFeature branches:" unless fbs.empty?
     fbs.each do |name, br|
       next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
