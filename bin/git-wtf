@@ -11,9 +11,9 @@ remote repo, and you're interested in the relationship between the two.
 
 git-wtf shows you:
 - How your branch relates to the remote repo, if it's a tracking branch.
-- How your branch relates to non-feature (what I've been calling "version")
-  branches, if it's a feature branch.
-- How your branch relates to the feature branches, if it's a version branch.
+- How your branch relates to integration branches, if it's a feature branch.
+- How your branch relates to the feature branches, if it's an integration
+  branch.
 
 For each of these relationships, git-wtf displays the commits pending on
 either side, if any. It displays checkboxes along the side for easy scanning
@@ -47,16 +47,16 @@ With --dump-config, git-wtf will print out its current configuration in YAML
 format and exit. With --all, you'll see all feature branches across all
 remote repos, not just those from origin.
 
-git-wtf uses some heuristics to determine which branches are version
+git-wtf uses some heuristics to determine which branches are integration
 branches, and which are feature branches. (Specifically, it assumes the
-version branches are named "master", "next" and "edge".) If it guesses
+integration branches are named "master", "next" and "edge".) If it guesses
 incorrectly, you will have to create a .git-wtfrc file.
 
 git-wtf looks for a .git-wtfrc file starting in the current directory, and
-recursively up to the root. The config file is a YAML file that specifies
-the version branches, any branches to ignore, and the max number of commits
-to display when --all-commits isn't used. To start building a configuration
-file, run "git-wtf --dump-config > .git-wtfrc" and edit it.
+recursively up to the root. The config file is a YAML file that specifies the
+integration branches, any branches to ignore, and the max number of commits to
+display when --all-commits isn't used. To start building a configuration file,
+run "git-wtf --dump-config > .git-wtfrc" and edit it.
 
 IMPORTANT NOTE: all local branches referenced in .git-wtfrc must be prefixed
 with heads/, e.g. "heads/master". Remote branches must be of the form
@@ -216,7 +216,7 @@ def show b, all_branches
       end
     end
   else
-    puts "\nVersion branches:" unless vbs.empty? # unlikely
+    puts "\nIntegration branches:" unless vbs.empty? # unlikely
     vbs.sort_by { |v, br| v }.each do |v, br|
       next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
       next if br[:ignore]
