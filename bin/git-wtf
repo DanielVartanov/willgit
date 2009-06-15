@@ -267,6 +267,7 @@ branches = `git config --get-regexp ^branch\.`.inject({}) do |hash, l|
 end
 
 ## finally, index all branches
+remote_branches = {}
 `git show-ref`.each do |l|
   sha1, ref = l.chomp.split " refs/"
 
@@ -277,6 +278,7 @@ end
     branches[name].merge! :name => name, :local_branch => ref
   elsif ref =~ /^remotes\/(.+?)\/(.+)$/ # remote branch
     remote, name = $1, $2
+    remote_branches["#{remote}/#{name}"] = true
     next if name == "HEAD"
     ignore = !($all || remote == "origin")
 
@@ -292,7 +294,15 @@ end
   end
 end
 
-branches.each { |k, b| b[:remote_branch] = (b[:remote] == '.' ? b[:remote_mergepoint] : "#{b[:remote]}/#{b[:remote_mergepoint]}") if b[:remote] && b[:remote_mergepoint] }
+branches.each do |k, b|
+  next unless b[:remote] && b[:remote_mergepoint]
+  b[:remote_branch] = if b[:remote] == "."
+    b[:remote_mergepoint]
+  else
+    t = "#{b[:remote]}/#{b[:remote_mergepoint]}"
+    remote_branches[t] && t # only if it's still alive
+  end
+end
 
 show_dirty = ARGV.empty?
 targets = if ARGV.empty?
