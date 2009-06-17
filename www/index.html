@@ -18,9 +18,9 @@
     <p>
     <ul>
     <li><a href="#git-wtf">git-wtf</a>: understand the current state of your git repository.</li>
-    <li><a href="#git-show-merges">git-show-merges</a>: show which branches are merged into the current branch.</li>
     <li><a href="#git-publish-branch">git-publish-branch</a>: publish a branch to a remote repository.</li>
     <li><a href="#git-rank-contributors">git-rank-contributors</a>: rank all authors by patch size.</li>
+    <li><a href="#git-show-merges">git-show-merges</a>: show which branches are merged into the current branch.</li>
     <li><a href="#git-walkthrough-add">git-walkthrough-add</a>: (deprecated) like <code>git add -p</code>.</li>
     </ul>
     </p>
@@ -53,106 +53,35 @@ network access).</p>
     <div class="screencap"><code><pre>
 $ git wtf
 Local branch: heads/master
-[ ] NOT in sync with remote (needs push)
- - fancify issue links in HTML by colorizing the status [17fda75]
- - add commits tagged with Ditz-issue and the id to the commit list for an issue [6dcea0a]
- - add git plugin to manifest [8098f34]
- - add completion scripts to manifest [1d0b97e]
- - move global functions into Ditz module namespace [be41ff0]
-
-Remote branch: origin/master (git@gitorious.org:ditz/mainline.git)
+[x] in sync with remote
+Remote branch: origin/master (git@gitorious.org:willgit/mainline.git)
 [x] in sync with local
 
 Feature branches:
-[x] plugins is merged in
-[ ] full-arg-parsing is NOT merged in (1 commit ahead; 8 commits behind)
-   - tmp [874da45]
-[x] better-html is merged in
-
+{ } origin/experimental is NOT merged in (1 commit ahead)
+    - some tweaks i'm playing around with [80e5da1]
+{ } origin/dont-assume-origin is NOT merged in (1 commit ahead)
+    - guess primary remote repo from git config instead of assuming "origin" [23c96f1]
 $</pre></code></div>
 
     <div class="screencap"><code><pre>$ git wtf
-Local branch: heads/next
-  [x] in sync with remote
-Remote branch: origin/next (git+ssh://wmorgan@repo.or.cz/srv/git/sup.git)
-  [x] in sync with local
-Feature branches:
-  [x] non-ascii-message-id is merged in
-  [ ] ncurses-widechar is NOT merged in (1 commit ahead; 83 commits behind)
-    - tmp [9676c71] (wmorgan-sup@...; 8 weeks ago)
-  [ ] join-threads-bugfix is NOT merged in (1 commit ahead; 181 commits behind)
-    - tmp commit: debugging [a634c29] (wmorgan-sup@...; 5 months ago)
-  [ ] imap-cache-headers is NOT merged in (1 commit ahead; 181 commits behind)
-    - temp commit [753c924] (wmorgan-sup@...; 5 months ago)
-  [x] maildir-speedup is merged in
-  [ ] release-0.4 is NOT merged in (1 commit ahead; 248 commits behind)
-    - switch bin and lib versions from git -> 0.4 [df2da07] (wmorgan-sup@...; 5 months ago)
-  [ ] mbox-parse-fix is NOT merged in (4 commits ahead; 76 commits behind)
-    - tmp [4df28ef] (wmorgan-sup@...; 9 weeks ago)
-    - tmp [772db99] (wmorgan-sup@...; 9 weeks ago)
-    - tmp [5c856a1] (wmorgan-sup@...; 9 weeks ago)
-    - tmp [278ab13] (wmorgan-sup@...; 9 weeks ago)
-  [ ] encoding-tweaking is NOT merged in (1 commit ahead; 81 commits behind)
-    - tmp [19fdca3] (wmorgan-sup@...; 9 weeks ago)
-  [x] release-0.5 is merged in
-  [ ] local-changes-only is NOT merged in (1 commit ahead; 6 commits behind)
-    - rakefile: use local ditz [089d363] (wmorgan-sup@...; 8 days ago)
-  [ ] imap-share-connections is NOT merged in (1 commit ahead; 181 commits behind)
-    - temp commit [f90a937] (wmorgan-sup@...; 5 months ago)
-  [ ] todo-updates is NOT merged in (24 commits ahead; 286 commits behind)
-    - checkpoint bugs.yaml [e9f83af] (wmorgan-sup@...; 3 months ago)
-    - checkpoint bugs.yaml [05230e3] (wmorgan-sup@...; 3 months ago)
-    - checkpoint bugs.yaml [0c18af1] (wmorgan-sup@...; 3 months ago)
-    - checkpoint bugs.yaml [0e0d945] (wmorgan-sup@...; 4 months ago)
-    - checkpoint bugs.yaml [7e47447] (wmorgan-sup@...; 4 months ago)
-      ... and 19 more.
-  [x] reply-from-hook is merged in
-  [x] color is merged in
-  [ ] ncursesw is NOT merged in (4 commits ahead; 84 commits behind)
-    - add run-this-for-sup.sh [1fb0049] (wmorgan-sup@...; 9 weeks ago)
-    - tweak extconf.rb to require ncursesw instead of ncurses [e2b6018] (wmorgan-sup@...; 9 weeks ago)
-    - remove generated files [e93f329] (wmorgan-sup@...; 9 weeks ago)
-    - initial import of gem directory [a523ddc] (wmorgan-sup@...; 9 weeks ago)
-  [x] edit-as-new-fix is merged in
-  [x] attachments is merged in
-  [x] find-in-buffer-fix is merged in
+Local branch: heads/master
+[ ] NOT in sync with remote (needs push)
+    - Add before-search hook, for shortcuts for custom search queries. [4430d1b] (edwardzyang@...; 7 days ago)
+Remote branch: origin/master (git@gitorious.org:sup/mainline.git)
+[x] in sync with local
 
+Feature branches:
+{ } origin/release-0.8.1 is NOT merged in (1 commit ahead)
+    - bump to 0.8.1 [dab43fb] (wmorgan-sup@...; 2 days ago)
+[ ] labels-before-subj is NOT merged in (1 commit ahead)
+    - put labels before subject in thread index view [790b64d] (marka@...; 4 weeks ago)
+{x} origin/enclosed-message-display-tweaks merged in
+(~) experiment merged in (only locally)
+
+NOTE: working directory contains modified files
 $</pre></code></div>
 </p>
-
-    <h2><a name="git-show-merges">git-show-merges</a></h2>
-
-    <p> <a href="git-show-merges">git-show-merges</a> is a precursor to <a href="#git-wtf">git-wtf</a>.
-    It's a simple tool that shows you which branches have been merged in to the
-    current branch, and which haven't. That's it. You can also specify multiple
-    non-topic branches (merge branches?) on the commandline.</p>
-
-    <div class="screencap"><code><pre>
-$ git show-merges
-merged into next:
-  attachments
-  color
-  edit-as-new-fix
-  find-in-buffer-fix
-  maildir-speedup
-  non-ascii-message-id
-  release-0.5
-  reply-from-hook
-
-not merged into next: 
-  encoding-tweaking
-  imap-cache-headers
-  imap-share-connections
-  join-threads-bugfix
-  local-changes-only
-  master
-  mbox-parse-fix
-  ncurses-widechar
-  ncursesw
-  release-0.4
-  todo-updates
-
-$</pre></code></div>
 
     <h2><a name="git-publish-branch">git-publish-branch</a></h2>
 
@@ -189,6 +118,40 @@ $</pre></code></div>
     does. So I will not be putting a lot of energy into maintaining this any
     more.</i> </p>
 
+    <h2><a name="git-show-merges">git-show-merges</a></h2>
+
+    <p> <a href="git-show-merges">git-show-merges</a> is a precursor to <a href="#git-wtf">git-wtf</a>.
+    It's a simple tool that shows you which branches have been merged in to the
+    current branch, and which haven't. That's it. You can also specify multiple
+    non-topic branches (merge branches?) on the commandline.</p>
+
+    <div class="screencap"><code><pre>
+$ git show-merges
+merged into next:
+  attachments
+  color
+  edit-as-new-fix
+  find-in-buffer-fix
+  maildir-speedup
+  non-ascii-message-id
+  release-0.5
+  reply-from-hook
+
+not merged into next: 
+  encoding-tweaking
+  imap-cache-headers
+  imap-share-connections
+  join-threads-bugfix
+  local-changes-only
+  master
+  mbox-parse-fix
+  ncurses-widechar
+  ncursesw
+  release-0.4
+  todo-updates
+
+$</pre></code></div>
+
     <p> <a href="git-wt-add">git-wt-add</a> is a darcs-style interactive staging script for git. It
     walks you through unstaged changes on a hunk-by-hunk basis and allows you
     to pick the ones you'd like staged. It features colorized diff output and a
@@ -202,11 +165,13 @@ $</pre></code></div>
 
     <h2>Credit</h2>
 
-    <p>This collection of vaguely useful tools is brought to you by <a href="http://cs.stanford.edu/~ruby/">William Morgan</a> and the following contributors:
+    <p>This collection of vaguely useful tools is brought to you by <a href="http://cs.stanford.edu/~ruby/">William Morgan</a> and the following honorable contributors:
 
     <ul>
-      <li> David Soria Parra &lt;dsp at the php dot nets&gt; </li>
-      <li> Jeff Balogh &lt;its.jeff.balogh at the gmail dot coms&gt; </li>
+      <li> David Soria Parra &lt;dsp@...&gt; </li>
+      <li> Wade Simmons &lt;wsimmons@...&gt; </li>
+      <li> Jeff Balogh &lt;its.jeff.balogh@...&gt; </li>
+      <li> Jordi Bunster &lt;jordi@...&gt; </li>
     </ul>
     </p>
   </body>
