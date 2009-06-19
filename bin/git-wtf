@@ -244,14 +244,14 @@ def show b, all_branches
 end
 
 ## first, index registered remotes
-remotes = `git config --get-regexp ^remote\.\*\.url`.inject({}) do |hash, l|
+remotes = `git config --get-regexp ^remote\.\*\.url`.split(/[\r\n]+/).inject({}) do |hash, l|
   l =~ /^remote\.(.+?)\.url (.+)$/ or next hash
   hash[$1] ||= $2
   hash
 end
 
 ## next, index followed branches
-branches = `git config --get-regexp ^branch\.`.inject({}) do |hash, l|
+branches = `git config --get-regexp ^branch\.`.split(/[\r\n]+/).inject({}) do |hash, l|
   case l
   when /branch\.(.*?)\.remote (.+)/
     name, remote = $1, $2
@@ -268,7 +268,7 @@ end
 
 ## finally, index all branches
 remote_branches = {}
-`git show-ref`.each do |l|
+`git show-ref`.split(/[\r\n]+/).each do |l|
   sha1, ref = l.chomp.split " refs/"
 
   if ref =~ /^heads\/(.+)$/ # local branch
