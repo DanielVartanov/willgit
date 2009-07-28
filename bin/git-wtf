@@ -44,6 +44,7 @@ If [branch] is not specified, git-wtf will use the current branch. The possible
   -A, --all-commits   show all commits, not just the first 5
   -s, --short         don't show commits
   -k, --key           show key
+  -r, --relations     show relation to features / integration branches
       --dump-config   print out current configuration and exit
 
 git-wtf uses some heuristics to determine which branches are integration
@@ -93,6 +94,7 @@ $all = ARGV.delete("--all") || ARGV.delete("-a")
 $all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
 $key = ARGV.delete("--key") || ARGV.delete("-k")
+$show_relations = ARGV.delete("--relations") || ARGV.delete("-r")
 
 def find_file fn
   while true
@@ -160,7 +162,7 @@ def widget merged_in, remote_only=false, local_only=false, local_only_merge=fals
   print left, middle, right
 end
 
-def show b, all_branches
+def show b
   have_both = b[:local_branch] && b[:remote_branch]
 
   pushc, pullc, oosync = if have_both
@@ -197,7 +199,11 @@ def show b, all_branches
     end
   end
 
-  vbs, fbs = all_branches.partition { |name, br| $config["integration-branches"].include?(br[:local_branch]) || $config["integration-branches"].include?(br[:remote_branch]) }
+  puts "\nWARNING: local and remote branches have diverged. A merge will occur unless you rebase." if oosync
+end
+
+def show_relations b, all_branches
+  ibs, fbs = all_branches.partition { |name, br| $config["integration-branches"].include?(br[:local_branch]) || $config["integration-branches"].include?(br[:remote_branch]) }
   if $config["integration-branches"].include? b[:local_branch]
     puts "\nFeature branches:" unless fbs.empty?
     fbs.each do |name, br|
@@ -224,8 +230,8 @@ def show b, all_branches
       end
     end
   else
-    puts "\nIntegration branches:" unless vbs.empty? # unlikely
-    vbs.sort_by { |v, br| v }.each do |v, br|
+    puts "\nIntegration branches:" unless ibs.empty? # unlikely
+    ibs.sort_by { |v, br| v }.each do |v, br|
       next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
       next if br[:ignore]
       local_only = br[:remote_branch].nil?
@@ -239,8 +245,6 @@ def show b, all_branches
       end
     end
   end
-
-  puts "\nWARNING: local and remote branches have diverged. A merge will occur unless you rebase." if oosync
 end
 
 ## first, index registered remotes
@@ -311,7 +315,10 @@ else
   ARGV.map { |x| x.sub(/^heads\//, "") }
 end.map { |t| branches[t] or abort "Error: can't find branch #{t.inspect}." }
 
-targets.each { |t| show t, branches }
+targets.each do |t|
+  show t
+  show_relations t, branches if $show_relations
+end
 
 modified = show_dirty && `git ls-files -m` != ""
 uncommitted = show_dirty &&  `git diff-index --cached HEAD` != ""
