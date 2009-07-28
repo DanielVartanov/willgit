@@ -154,7 +154,7 @@ def show_commits commits, prefix="    "
     max = $all_commits ? commits.size : $config["max_commits"]
     max -= 1 if max == commits.size - 1 # never show "and 1 more"
     commits[0 ... max].each { |c| puts "#{prefix}#{c}" }
-    puts grey("#{prefix}... and #{commits.size - max} more.") if commits.size > max
+    puts grey("#{prefix}... and #{commits.size - max} more (use -A to see all).") if commits.size > max
   end
 end
 
@@ -195,7 +195,7 @@ def show b
         puts "#{widget true} in sync with remote"
       else
         action = oosync ? "push after rebase / merge" : "push"
-        puts "#{widget false} NOT in sync with remote (needs #{action})"
+        puts "#{widget false} NOT in sync with remote (you should #{action})"
         show_commits pushc unless $short
       end
     end
@@ -209,7 +209,7 @@ def show b
         puts "#{widget true} in sync with local"
       else
         action = pushc.empty? ? "merge" : "rebase / merge"
-        puts "#{widget false} NOT in sync with local (needs #{action})"
+        puts "#{widget false} NOT in sync with local (you should #{action})"
         show_commits pullc unless $short
       end
     end
@@ -347,7 +347,7 @@ uncommitted = show_dirty &&  `git diff-index --cached HEAD` != ""
 puts KEY if $key
 
 puts if modified || uncommitted
-puts "#{red "NOTE"}: working directory contains modified files" if modified
-puts "#{red "NOTE"}: staging area contains staged but uncommitted files" if uncommitted
+puts "#{red "NOTE"}: working directory contains modified files." if modified
+puts "#{red "NOTE"}: staging area contains staged but uncommitted files." if uncommitted
 
 # the end!
