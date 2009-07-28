@@ -92,26 +92,24 @@ $all = ARGV.delete("--all") || ARGV.delete("-a")
 $all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
 
+def find_file fn
+  while true
+    return fn if File.exist? fn
+    fn2 = File.join("..", fn)
+    return nil if File.expand_path(fn2) == File.expand_path(fn)
+    fn = fn2
+  end
+end
+
 ## find config file
 $config = { "integration-branches" => %w(heads/master heads/next heads/edge), "ignore" => [], "max_commits" => 5 }.merge begin
-  p = File.expand_path "."
-  fn = while true
-    fn = File.join p, CONFIG_FN
-    break fn if File.exist? fn
-    pp = File.expand_path File.join(p, "..")
-    break if p == pp
-    p = pp
+  fn = find_file CONFIG_FN
+  if fn && (h = YAML::load_file(fn)) # yaml turns empty files into false
+    h["integration-branches"] ||= h["versions"] # support old nomenclature
+    h
+  else
+    {}
   end
-
-  h = if fn
-    h = YAML::load_file fn
-    if h # yaml turns empty files into false
-      h["integration-branches"] ||= h["versions"] # support old nomenclature
-      h
-    end
-  end
-
-  h || {}
 end
 
 if $dump_config
