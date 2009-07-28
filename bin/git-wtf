@@ -17,6 +17,8 @@ merge.
 EOS
 
 KEY = <<EOS
+
+KEY:
 () branch only exists locally
 {} branch only exists on a remote repo
 [] branch exists locally and remotely
@@ -41,6 +43,7 @@ If [branch] is not specified, git-wtf will use the current branch. The possible
                       those from origin
   -A, --all-commits   show all commits, not just the first 5
   -s, --short         don't show commits
+  -k, --key           show key
       --dump-config   print out current configuration and exit
 
 git-wtf uses some heuristics to determine which branches are integration
@@ -89,6 +92,7 @@ $short = ARGV.delete("--short") || ARGV.delete("-s")
 $all = ARGV.delete("--all") || ARGV.delete("-a")
 $all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
+$key = ARGV.delete("--key") || ARGV.delete("-k")
 
 def find_file fn
   while true
@@ -311,6 +315,8 @@ targets.each { |t| show t, branches }
 
 modified = show_dirty && `git ls-files -m` != ""
 uncommitted = show_dirty &&  `git diff-index --cached HEAD` != ""
+
+puts KEY if $key
 
 puts if modified || uncommitted
 puts "NOTE: working directory contains modified files" if modified
