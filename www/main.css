@@ -45,3 +45,9 @@ a, a:visited
   width: 50em;
   margin-bottom: 1em;
 }
+
+.yellow { color: yellow; }
+.green { color: green; }
+.cyan { color: #0ef3eb; }
+.purple { color: #7633cc; }
+.red { color: red; }
