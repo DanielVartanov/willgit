@@ -121,13 +121,27 @@ if $dump_config
   exit
 end
 
+want_color = `git config color.wtf`
+want_color = `git config color.ui` if want_color.empty?
+$color = case want_color.chomp
+  when "yes"; true
+  when "auto"; $stdout.tty?
+end
+
+def red s; $color ? "\033[31m#{s}\033[0m" : s end
+def green s; $color ? "\033[32m#{s}\033[0m" : s end
+def yellow s; $color ? "\033[33m#{s}\033[0m" : s end
+def cyan s; $color ? "\033[36m#{s}\033[0m" : s end
+def grey s; $color ? "\033[1;30m#{s}\033[0m" : s end
+def purple s; $color ? "\033[35m#{s}\033[0m" : s end
+
 ## the set of commits in 'to' that aren't in 'from'.
 ## if empty, 'to' has been merged into 'from'.
 def commits_between from, to
   if $long
-    `git log --pretty=format:"- %s [%h] (%ae; %ar)" #{from}..#{to}`
+    `git log --pretty=format:"- %s [#{yellow "%h"}] (#{purple "%ae"}; %ar)" #{from}..#{to}`
   else
-    `git log --pretty=format:"- %s [%h]" #{from}..#{to}`
+    `git log --pretty=format:"- %s [#{yellow "%h"}]" #{from}..#{to}`
   end.split(/[\r\n]+/)
 end
 
@@ -138,7 +152,7 @@ def show_commits commits, prefix="    "
     max = $all_commits ? commits.size : $config["max_commits"]
     max -= 1 if max == commits.size - 1 # never show "and 1 more"
     commits[0 ... max].each { |c| puts "#{prefix}#{c}" }
-    puts "#{prefix}... and #{commits.size - max} more." if commits.size > max
+    puts grey("#{prefix}... and #{commits.size - max} more.") if commits.size > max
   end
 end
 
@@ -155,8 +169,8 @@ def widget merged_in, remote_only=false, local_only=false, local_only_merge=fals
     else %w([ ])
   end
   middle = case
-    when merged_in && local_only_merge; "~"
-    when merged_in; "x"
+    when merged_in && local_only_merge; green("~")
+    when merged_in; green("x")
     else " "
   end
   print left, middle, right
@@ -172,7 +186,7 @@ def show b
   end
 
   if b[:local_branch]
-    puts "Local branch: #{b[:local_branch]}"
+    puts "Local branch: " + green(b[:local_branch].sub(/^heads\//, ""))
 
     if have_both
       if pushc.empty?
@@ -186,7 +200,7 @@ def show b
   end
 
   if b[:remote_branch]
-    puts "Remote branch: #{b[:remote_branch]} (#{b[:remote_url]})"
+    puts "Remote branch: #{cyan b[:remote_branch]} (#{b[:remote_url]})"
 
     if have_both
       if pullc.empty?
@@ -199,7 +213,7 @@ def show b
     end
   end
 
-  puts "\nWARNING: local and remote branches have diverged. A merge will occur unless you rebase." if oosync
+  puts "\n#{red "WARNING"}: local and remote branches have diverged. A merge will occur unless you rebase." if oosync
 end
 
 def show_relations b, all_branches
@@ -211,6 +225,8 @@ def show_relations b, all_branches
       next if br[:ignore]
       local_only = br[:remote_branch].nil?
       remote_only = br[:local_branch].nil?
+      name = remote_only ? cyan(br[:name]) : green(br[:name])
+
       ## for remote_only branches, we'll compute wrt the remote branch head. otherwise, we'll
       ## use the local branch head.
       head = remote_only ? br[:remote_branch] : br[:local_branch]
@@ -219,13 +235,13 @@ def show_relations b, all_branches
       local_ahead = b[:local_branch] ? commits_between(b[:local_branch], head) : []
 
       if local_ahead.empty? && remote_ahead.empty?
-        puts "#{widget true, remote_only, local_only} #{br[:name]} is merged in"
+        puts "#{widget true, remote_only, local_only} #{name} #{local_only ? "(local-only) " : ""}is merged in"
       elsif local_ahead.empty?
-        puts "#{widget true, remote_only, local_only, true} #{br[:name]} merged in (only locally)"
+        puts "#{widget true, remote_only, local_only, true} #{name} merged in (only locally)"
       else
         behind = commits_between head, (br[:local_branch] || br[:remote_branch])
         ahead = remote_only ? remote_ahead : local_ahead
-        puts "#{widget false, remote_only, local_only} #{br[:name]} is NOT merged in (#{ahead_behind_string ahead, behind})"
+        puts "#{widget false, remote_only, local_only} #{name} #{local_only ? "(local-only) " : ""}is NOT merged in (#{ahead_behind_string ahead, behind})"
         show_commits ahead unless $short
       end
     end
@@ -235,12 +251,15 @@ def show_relations b, all_branches
       next if $config["ignore"].member?(br[:local_branch]) || $config["ignore"].member?(br[:remote_branch])
       next if br[:ignore]
       local_only = br[:remote_branch].nil?
+      remote_only = br[:local_branch].nil?
+      name = remote_only ? cyan(br[:name]) : green(br[:name])
+
       ahead = commits_between v, (b[:local_branch] || b[:remote_branch])
       if ahead.empty?
-        puts "#{widget true, local_only} merged into #{v}"
+        puts "#{widget true, local_only} merged into #{name}"
       else
         #behind = commits_between b[:local_branch], v
-        puts "#{widget false, local_only} NOT merged into #{v} (#{ahead.size.pluralize 'commit'} ahead)"
+        puts "#{widget false, local_only} NOT merged into #{name} (#{ahead.size.pluralize 'commit'} ahead)"
         show_commits ahead unless $short
       end
     end
@@ -326,7 +345,7 @@ uncommitted = show_dirty &&  `git diff-index --cached HEAD` != ""
 puts KEY if $key
 
 puts if modified || uncommitted
-puts "NOTE: working directory contains modified files" if modified
-puts "NOTE: staging area contains staged but uncommitted files" if uncommitted
+puts "#{red "NOTE"}: working directory contains modified files" if modified
+puts "#{red "NOTE"}: staging area contains staged but uncommitted files" if uncommitted
 
 # the end!
