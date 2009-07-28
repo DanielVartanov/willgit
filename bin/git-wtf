@@ -87,7 +87,7 @@ if ARGV.delete("--help") || ARGV.delete("-h")
   puts USAGE
   exit
 end
-  
+
 $long = ARGV.delete("--long") || ARGV.delete("-l")
 $short = ARGV.delete("--short") || ARGV.delete("-s")
 $all = ARGV.delete("--all") || ARGV.delete("-a")
@@ -95,6 +95,8 @@ $all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
 $key = ARGV.delete("--key") || ARGV.delete("-k")
 $show_relations = ARGV.delete("--relations") || ARGV.delete("-r")
+
+ARGV.each { |a| abort "Error: unknown argument #{a}." if a =~ /^--/ }
 
 def find_file fn
   while true
