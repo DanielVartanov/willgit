@@ -1,68 +1,66 @@
 #!/usr/bin/env ruby
 
 HELP = <<EOS
-git-wtf: display the state of your repository in a readable and easy-to-scan
-format. git-wtf tries to ease the task of dealing with many git branches.
-It's also useful for getting a summary of how tracking branches relate to a
-remote server.
+git-wtf displays the state of your repository in a readable and easy-to-scan
+format. It's useful for getting a summary of how a track branch relates to a
+remote server, and for understanding how feature branches and relate to
+integration branches.
 
-git-wtf is mainly useful in the case where you have one local repo and one
-remote repo, and you're interested in the relationship between the two.
-
-git-wtf shows you:
-- How your branch relates to the remote repo, if it's a tracking branch.
-- How your branch relates to integration branches, if it's a feature branch.
-- How your branch relates to the feature branches, if it's an integration
+git-wtf can show you:
+- How a branch relates to the remote repo, if it's a tracking branch.
+- How a branch relates to integration branches, if it's a feature branch.
+- How a branch relates to the feature branches, if it's an integration
   branch.
 
-For each of these relationships, git-wtf displays the commits pending on
-either side, if any. It displays checkboxes along the side for easy scanning
-of merged/non-merged branches.
+git-wtf is best used before a git push, or between a git fetch and a git
+merge.
+EOS
 
-OUTPUT KEY
+KEY = <<EOS
+() branch only exists locally
+{} branch only exists on a remote repo
+[] branch exists locally and remotely
 
-[] means the branch exists locally and remotely
-() means the branch only exists locally
-{} means it only exists on a remote repo
+x merge occurs both locally and remotely
+~ merge occurs only locally
+  (space) branch isn't merged in
 
-x means the merge occurs both locally and remotely
-~ means the merge occurs only locally
-  (space) means the branch isn't merged in
-
-It's possible for merges to occur remotely and not locally, of course, but
+(It's possible for merges to occur remotely and not locally, of course, but
 that's a less common case and git-wtf currently doesn't display anything
-special for it.
+special for it.)
+EOS
 
-USAGE
+USAGE = <<EOS
+Usage: git wtf [branch+] [options]
 
-git wtf [branch+] [-l|--long] [-a|--all] [-A|--all-commits] [-s|--short]
+If [branch] is not specified, git-wtf will use the current branch. The possible
+[options] are:
 
-git-wtf is best used after a 'git fetch' and before a 'git push' or a 'git
-merge'.
-
-If [branch] is not specified, git-wtf will use the current branch.  With
---long, you'll see author info and date for each commit. With --all-commits,
-you'll see all commits, not just the first 5; with --short, you'll see none.
-With --dump-config, git-wtf will print out its current configuration in YAML
-format and exit. With --all, you'll see all feature branches across all
-remote repos, not just those from origin.
+  -l, --long          include author info and date for each commit
+  -a, --all           show all branches across all remote repos, not just
+                      those from origin
+  -A, --all-commits   show all commits, not just the first 5
+  -s, --short         don't show commits
+      --dump-config   print out current configuration and exit
 
 git-wtf uses some heuristics to determine which branches are integration
 branches, and which are feature branches. (Specifically, it assumes the
 integration branches are named "master", "next" and "edge".) If it guesses
 incorrectly, you will have to create a .git-wtfrc file.
 
-git-wtf looks for a .git-wtfrc file starting in the current directory, and
-recursively up to the root. The config file is a YAML file that specifies the
+To start building a configuration file, run "git-wtf --dump-config >
+.git-wtfrc" and edit it. The config file is a YAML file that specifies the
 integration branches, any branches to ignore, and the max number of commits to
-display when --all-commits isn't used. To start building a configuration file,
-run "git-wtf --dump-config > .git-wtfrc" and edit it.
+display when --all-commits isn't used.  git-wtf will look for a .git-wtfrc file
+starting in the current directory, and recursively up to the root.
 
 IMPORTANT NOTE: all local branches referenced in .git-wtfrc must be prefixed
 with heads/, e.g. "heads/master". Remote branches must be of the form
 remotes/<remote>/<branch>.
+EOS
 
-git-wtf Copyright 2008 William Morgan <wmorgan-git-wt-add@masanjin.net>.
+COPYRIGHT = <<EOS
+git-wtf Copyright 2008--2009 William Morgan <wmorgan at the masanjin dot nets>.
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
 Software Foundation, either version 3 of the License, or (at your option)
@@ -82,7 +80,7 @@ CONFIG_FN = ".git-wtfrc"
 class Numeric; def pluralize s; "#{to_s} #{s}" + (self != 1 ? "s" : "") end end
 
 if ARGV.delete("--help") || ARGV.delete("-h")
-  puts HELP
+  puts USAGE
   exit
 end
   
