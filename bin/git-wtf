@@ -227,7 +227,13 @@ def show_relations b, all_branches
       next if br[:ignore]
       local_only = br[:remote_branch].nil?
       remote_only = br[:local_branch].nil?
-      name = remote_only ? cyan(br[:name]) : green(br[:name])
+      name = if local_only
+        purple br[:name]
+      elsif remote_only
+        cyan br[:name]
+      else
+        green br[:name]
+      end
 
       ## for remote_only branches, we'll compute wrt the remote branch head. otherwise, we'll
       ## use the local branch head.
