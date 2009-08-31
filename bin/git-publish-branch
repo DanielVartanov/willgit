@@ -32,13 +32,9 @@
 
 def exec cmd
   puts cmd
-  system cmd or die unless $fake
+  system cmd or abort unless $fake
 end
 
-def die s=nil
-  $stderr.puts s if s
-  exit(-1)
-end
 
 head = `git symbolic-ref HEAD`.chomp.gsub(/refs\/heads\//, "")
 delete = ARGV.delete "-d"
@@ -59,9 +55,9 @@ if delete
     exec "git config --unset branch.#{branch}.merge"
   end
 else
-  die "No local branch #{branch} exists!" if local_ref.empty?
-  die "A remote branch #{branch} on #{remote} already exists!" unless remote_ref.empty?
-  die "Local branch #{branch} is already a tracking branch!" unless remote_config.empty?
+  abort "No local branch #{branch} exists!" if local_ref.empty?
+  abort "A remote branch #{branch} on #{remote} already exists!" unless remote_ref.empty?
+  abort "Local branch #{branch} is already a tracking branch!" unless remote_config.empty?
 
   exec "git push #{remote} #{branch}:refs/heads/#{branch}"
   exec "git config branch.#{branch}.remote #{remote}"
