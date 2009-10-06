@@ -344,7 +344,7 @@ end.map { |t| branches[t] or abort "Error: can't find branch #{t.inspect}." }
 
 targets.each do |t|
   show t
-  show_relations t, branches if $show_relations
+  show_relations t, branches if $show_relations || t[:remote_branch].nil?
 end
 
 modified = show_dirty && `git ls-files -m` != ""
