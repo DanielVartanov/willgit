@@ -86,6 +86,7 @@ if ARGV.delete("--help") || ARGV.delete("-h")
   exit
 end
 
+## poor man's trollop
 $long = ARGV.delete("--long") || ARGV.delete("-l")
 $short = ARGV.delete("--short") || ARGV.delete("-s")
 $all = ARGV.delete("--all") || ARGV.delete("-a")
@@ -93,9 +94,9 @@ $all_commits = ARGV.delete("--all-commits") || ARGV.delete("-A")
 $dump_config = ARGV.delete("--dump-config")
 $key = ARGV.delete("--key") || ARGV.delete("-k")
 $show_relations = ARGV.delete("--relations") || ARGV.delete("-r")
-
 ARGV.each { |a| abort "Error: unknown argument #{a}." if a =~ /^--/ }
 
+## search up the path for a file
 def find_file fn
   while true
     return fn if File.exist? fn
@@ -103,22 +104,6 @@ def find_file fn
     return nil if File.expand_path(fn2) == File.expand_path(fn)
     fn = fn2
   end
-end
-
-## find config file
-$config = { "integration-branches" => %w(heads/master heads/next heads/edge), "ignore" => [], "max_commits" => 5 }.merge begin
-  fn = find_file CONFIG_FN
-  if fn && (h = YAML::load_file(fn)) # yaml turns empty files into false
-    h["integration-branches"] ||= h["versions"] # support old nomenclature
-    h
-  else
-    {}
-  end
-end
-
-if $dump_config
-  puts $config.to_yaml
-  exit
 end
 
 want_color = `git config color.wtf`
@@ -272,6 +257,24 @@ def show_relations b, all_branches
   end
 end
 
+#### EXECUTION STARTS HERE ####
+
+## find config file and load it
+$config = { "integration-branches" => %w(heads/master heads/next heads/edge), "ignore" => [], "max_commits" => 5 }.merge begin
+  fn = find_file CONFIG_FN
+  if fn && (h = YAML::load_file(fn)) # yaml turns empty files into false
+    h["integration-branches"] ||= h["versions"] # support old nomenclature
+    h
+  else
+    {}
+  end
+end
+
+if $dump_config
+  puts $config.to_yaml
+  exit
+end
+
 ## first, index registered remotes
 remotes = `git config --get-regexp ^remote\.\*\.url`.split(/[\r\n]+/).inject({}) do |hash, l|
   l =~ /^remote\.(.+?)\.url (.+)$/ or next hash
@@ -323,6 +326,7 @@ remote_branches = {}
   end
 end
 
+## assemble remotes
 branches.each do |k, b|
   next unless b[:remote] && b[:remote_mergepoint]
   b[:remote_branch] = if b[:remote] == "."
