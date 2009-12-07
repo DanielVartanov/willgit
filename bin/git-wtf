@@ -126,7 +126,7 @@ end
 want_color = `git config color.wtf`
 want_color = `git config color.ui` if want_color.empty?
 $color = case want_color.chomp
-  when "yes"; true
+  when "true"; true
   when "auto"; $stdout.tty?
 end
 
